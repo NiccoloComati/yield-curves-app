@@ -7,8 +7,6 @@ TYPE_PARAM = "type"
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) StreamlitApp/1.0"
 
-MIN_AVAILABLE_YEAR = 1990
-
 DEFAULT_START = date(2006, 6, 1)
 DEFAULT_END = date(2008, 12, 31)
 
