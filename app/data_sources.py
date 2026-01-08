@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-from config import BASE_URL, DATA_TYPE, TYPE_PARAM, USER_AGENT, YEAR_PARAM
+from config import BASE_URL, DATA_TYPE, MIN_AVAILABLE_YEAR, TYPE_PARAM, USER_AGENT, YEAR_PARAM
 
 
 def _fetch_page(year: int) -> BeautifulSoup:
@@ -40,7 +40,30 @@ def get_available_years(reference_year: int) -> tuple[list[int], str, int]:
     if href.startswith("/"):
         href = f"https://home.treasury.gov{href}"
 
+    if not years:
+        years = _probe_available_years(href, reference_year)
+
     return sorted(set(years)), href, reference_year
+
+
+def _probe_available_years(link_template: str, reference_year: int) -> list[int]:
+    years: list[int] = []
+    for year in range(MIN_AVAILABLE_YEAR, reference_year + 1):
+        if _year_has_data(link_template, reference_year, year):
+            years.append(year)
+    return years
+
+
+def _year_has_data(link_template: str, reference_year: int, year: int) -> bool:
+    url = link_template.replace(str(reference_year), str(year))
+    try:
+        response = requests.get(url, headers={"User-Agent": USER_AGENT}, stream=True, timeout=20)
+        if response.status_code != 200:
+            return False
+        chunk = next(response.iter_content(chunk_size=256), b"")
+        return b"Date" in chunk
+    except Exception:
+        return False
 
 
 def _download_year_data(year: int, link_template: str, reference_year: int) -> pd.DataFrame:
